@@ -5,6 +5,9 @@
 # for each time point, 10 time points, two treatments. If anyone can think of a better way to
 # do this, it would be much appreciated.
 
+# 4 contructs are created, two Expression Sets, for use with limma/edgeR etc.
+# And two summarized experiments, for use with DESeq2 etc. One each for host and pathogen.
+
 source("https://bioconductor.org/biocLite.R")
 library(Biobase)
 
@@ -43,7 +46,7 @@ library("SummarizedExperiment")
 library("rtracklayer")
 
 rawCounts<-read.csv("cornellGenomeModels-FM-ordered.csv",row.names = 1)
-rawCounts<-as.matrix(rawCounts)
+rawCounts<-as.matrix(rawCounts) #has to be a matrix. One of those wonderful things that every single manual/tutorial etc fails to mention.
 
 times<-c(0,1.5,3,6,12,24,48,72,96,120)
 pdata<-data.frame(treatment=c(rep("control",each=30),rep("inoculated",each=30)),time=(rep(times,each=3)),replicate=(rep(c("1","2","3"),times=20)))
@@ -56,7 +59,7 @@ pdataclean <- data.frame(treatment=ifelse(grepl("control",pdata$treatment),"con"
 pdataclean$treatment <- relevel(pdataclean$treatment, "con")
 pdataclean$time <- factor(pdataclean$time, levels=unique(pdataclean$time))
 pdataclean$id <- paste(pdataclean$treatment,pdataclean$time,pdataclean$replicate,sep="_")
-colData<-DataFrame(pdataclean)
+colData<-DataFrame(pdataclean) #The DataFrame declaration is important for some reason. No idea why. Again, not mentioned in manuals/tutorials.
 
 
 gffRangedData<-import.gff3("Kiwifruit_pseudomolecule.gff3")
@@ -65,87 +68,22 @@ gffRange<-gffRange[-1,]
 gffRanges<-as(gffRange, "GRanges")
 
 
-SummarizedExperiment(assays=list(counts=rawCounts), colData=colData)
+hostSE <- SummarizedExperiment(assays=list(counts=rawCounts), rowRanges=gffRanges,colData=colData)
 
-#                     rowRanges=gffRanges )
-#                     metadata=list(metadata))
-counts
-colData
+rawCounts<-read.csv("psaGenomeModels-FM-ordered.csv",row.names = 1)
+rawCounts<-as.matrix(rawCounts)
 
-xrawCounts<-rawCounts
-dim(rawCounts)
-dim(colData)
-dim(counts)
-counts<-as.matrix(counts)
-class(counts)
-rownames(counts)<-NULL
-counts<-rawCounts[1:200,1:6]
-colData<-colData[1:6,]
-dim(counts)
-length(gffRanges)
+gffRangedData<-import.gff3("Nz13v.gff")
+gffRange<-gffRangedData[gffRangedData$type=="gene",]
+gffRanges<-as(gffRange, "GRanges")
+gffRanges<-gffRanges[!gffRanges$locus_tag=="IYO_00005",]
+
+pathogenSE <- SummarizedExperiment(assays=list(counts=rawCounts), rowRanges=gffRanges,colData=colData)
 
 
-
-
-
-
-
-
-colData <- DataFrame(Treatment=rep(c("ChIP", "Input"), 3), row.names=LETTERS[1:6],time=c(1:6))
-colData
-rowRanges <- GRanges(rep(c("chr1", "chr2"), c(50, 150)),
-                     IRanges(floor(runif(200, 1e5, 1e6)), width=100),
-                     strand=sample(c("+", "-"), 200, TRUE),
-                     feature_id=sprintf("ID%03d", 1:200))
-
-
-rowRanges
-nrows <- 200
-ncols <- 6
-counts1 <- matrix(runif(nrows * ncols, 1, 1e4), nrows)
-dim(counts)
-colnames(counts)<-NULL
-dim(counts1)
-class(counts)
-head(counts)
-head(counts1)
-rownames(rawCounts)<-NULL
-colnames(rawCounts)<-1:60
-counts<-as.matrix(rawCounts[1:200,1:20])
-head(counts)
-se<-SummarizedExperiment(assays=list(counts=counts),colData=colData[1:20,])
-                     rowRanges=rowRanges,
-
-
-coldata <- DataFrame(pdataclean)
-
-colData(se)
-head(assay(se))
-rowRanges(se)
-
-dim(myGranges)
-class(gffRangedData)
-gfffile<-gffRangedData[gffRangedData$type=="gene",]
-gfffile
-coldata
-
-length(rownames(rawCounts))
-tail(myGranges)
-
-biocLite("rtracklayer")
-library("rtracklayer")
-
-gse
-gse<-fission
-colnames(rawCounts)<-pdataclean$id
-
-library("SummarizedExperiment")
-coldata <- DataFrame(pdataclean)
-
-
-
-genes<-rownames(rawCounts)
 
 
 hostSE
+hostEset
 pathogenSE
+pathogenEset
